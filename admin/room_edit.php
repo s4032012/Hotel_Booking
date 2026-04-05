@@ -1,5 +1,6 @@
 <?php 
 require_once 'header.php'; 
+$uploads_enabled = app_uploads_enabled();
 
 if (!isset($_GET['id'])) {
     header("Location: rooms.php");
@@ -35,7 +36,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $image_query = ""; 
     
     // Xử lý upload ảnh đại diện mới (nếu có)
-    if (!empty($_FILES["main_image"]["name"])) {
+    if ($uploads_enabled && !empty($_FILES["main_image"]["name"])) {
         $target_dir = "../uploads/";
         $filename = time() . "_" . basename($_FILES["main_image"]["name"]); 
         $target_file = $target_dir . $filename;
@@ -46,7 +47,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 
     // New gallery images upload logic (Multi-upload)
-    if (!empty($_FILES["gallery"]["name"][0])) {
+    if ($uploads_enabled && !empty($_FILES["gallery"]["name"][0])) {
         $count = count($_FILES["gallery"]["name"]);
         $insert_values = [];
         $target_dir = "../uploads/";
@@ -102,6 +103,11 @@ $gallery_result = $conn->query($gallery_sql);
     </h2>
     <?php if(isset($_GET['msg']) == 'deleted') echo "<p style='color:green; background:#e8f5e9; padding:10px;'>Đã xóa ảnh gallery!</p>"; ?>
     <?php if($msg) echo "<p style='color:red;'>$msg</p>"; ?>
+    <?php if(!$uploads_enabled): ?>
+        <p style="background:#fff8e1; color:#8a6d00; padding:12px 15px; border-radius:6px; margin-bottom:20px;">
+            Chế độ free không lưu được file upload bền vững. Bạn vẫn sửa được thông tin text, nhưng thay ảnh mới đang bị khóa.
+        </p>
+    <?php endif; ?>
 
     <form method="POST" enctype="multipart/form-data">
         
@@ -158,7 +164,7 @@ $gallery_result = $conn->query($gallery_sql);
         <div style="margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 20px;">
             <label style="display: block; margin-bottom: 5px; font-weight: 700; color: #333;">Ảnh đại diện hiện tại</label>
             <img src="../uploads/<?php echo $room['image']; ?>" style="height: 80px; margin: 5px 0 10px; border-radius: 4px; border: 1px solid #eee;">
-            <input type="file" name="main_image" accept="image/*" style="width: 100%;">
+            <input type="file" name="main_image" <?php echo $uploads_enabled ? '' : 'disabled'; ?> accept="image/*" style="width: 100%;">
         </div>
         
         <div style="margin-bottom: 30px;">
@@ -183,7 +189,7 @@ $gallery_result = $conn->query($gallery_sql);
             <?php endif; ?>
 
             <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #2980b9;">Thêm ảnh mới vào Gallery</label>
-            <input type="file" name="gallery[]" multiple accept="image/*" style="width: 100%; padding: 10px; border: 1px solid #2980b9; border-radius: 4px; background: #f8f8ff;">
+            <input type="file" name="gallery[]" multiple <?php echo $uploads_enabled ? '' : 'disabled'; ?> accept="image/*" style="width: 100%; padding: 10px; border: 1px solid #2980b9; border-radius: 4px; background: #f8f8ff;">
         </div>
         
         <div style="margin-bottom: 20px;">

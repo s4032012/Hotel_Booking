@@ -1,6 +1,7 @@
 <?php
 require_once 'includes/db.php';
 require_once 'includes/header.php';
+$uploads_enabled = app_uploads_enabled();
 
 if (!isset($_SESSION['user_id'])) {
     echo "<script>window.location.href='login.php';</script>"; exit();
@@ -18,7 +19,7 @@ if (isset($_POST['update_profile'])) {
     $_SESSION['user_name'] = $full_name;
 
     // Xử lý upload ảnh (đã được crop)
-    if (isset($_FILES['avatar']) && $_FILES['avatar']['error'] == 0) {
+    if ($uploads_enabled && isset($_FILES['avatar']) && $_FILES['avatar']['error'] == 0) {
         $target_dir = "uploads/avatars/";
         if (!file_exists($target_dir)) mkdir($target_dir, 0777, true);
         $new_filename = "user_" . $user_id . "_" . time() . ".jpg";
@@ -27,7 +28,11 @@ if (isset($_POST['update_profile'])) {
             $conn->query("UPDATE users SET avatar = '$new_filename' WHERE id = $user_id");
         }
     }
+    if (!$uploads_enabled) {
+        $message = "<div class='alert-success'>✅ Đã cập nhật thông tin. Upload avatar đang tắt ở chế độ free.</div>";
+    } else {
     $message = "<div class='alert-success'>✅ Cập nhật thành công!</div>";
+    }
 }
 
 // --- XỬ LÝ HỦY ĐƠN ---
@@ -100,13 +105,18 @@ $current_tab = isset($_GET['tab']) ? $_GET['tab'] : 'info';
         <div id="tab-info" class="tab-content <?php echo ($current_tab == 'info') ? 'active' : ''; ?>">
             <h2 style="margin-bottom: 20px; border-bottom: 2px solid #febb02; padding-bottom: 15px; color: #003580; display: inline-block;">Hồ sơ của tôi</h2>
             <?php echo $message; ?>
+            <?php if(!$uploads_enabled): ?>
+                <div class='alert-success' style="background:#fff8e1; color:#8a6d00; border-left-color:#d4a017;">
+                    Ở chế độ free trên Render, avatar mới không được upload vì web service không có persistent disk.
+                </div>
+            <?php endif; ?>
             
             <form method="POST" enctype="multipart/form-data">
                 <div style="margin-bottom: 25px; text-align: center;">
                     <label for="avatarInput" style="cursor: pointer; color: #0071c2; font-weight: bold; padding: 10px 20px; border: 2px dashed #0071c2; border-radius: 6px; display: inline-block; transition: 0.3s;">
                         <i class="fa fa-camera"></i> Chọn ảnh đại diện mới
                     </label>
-                    <input type="file" name="avatar" id="avatarInput" style="display: none;" accept="image/*">
+                    <input type="file" name="avatar" id="avatarInput" style="display: none;" accept="image/*" <?php echo $uploads_enabled ? '' : 'disabled'; ?>>
                 </div>
 
                 <div class="form-group">

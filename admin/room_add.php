@@ -1,6 +1,8 @@
 <?php 
 require_once 'header.php'; 
 $msg = "";
+$uploads_enabled = app_uploads_enabled();
+$default_image = env_value('DEFAULT_ROOM_IMAGE', 'hotel-bg.jpg');
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $name = $_POST['name'];
@@ -26,14 +28,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
     // 1. Xử lý upload ảnh đại diện (Main Image)
     $target_dir = "../uploads/";
-    $main_filename = time() . "_" . basename($_FILES["main_image"]["name"]); 
-    $target_main_file = $target_dir . $main_filename;
-    
-    if (move_uploaded_file($_FILES["main_image"]["tmp_name"], $target_main_file)) {
+    $main_filename = $default_image;
+    $main_image_uploaded = false;
+
+    if ($uploads_enabled && isset($_FILES["main_image"]) && $_FILES["main_image"]["error"] == 0) {
+        $main_filename = time() . "_" . basename($_FILES["main_image"]["name"]);
+        $target_main_file = $target_dir . $main_filename;
+        $main_image_uploaded = move_uploaded_file($_FILES["main_image"]["tmp_name"], $target_main_file);
+    } elseif (!$uploads_enabled) {
+        $main_image_uploaded = true;
+    }
+
+    if ($main_image_uploaded) {
         
         // --- BẮT ĐẦU: XỬ LÝ ẢNH 360 ĐỘ TỪ CAMERA ---
         $anh_360_name = ""; 
-        if (isset($_FILES['anh_360']) && $_FILES['anh_360']['error'] == 0) {
+        if ($uploads_enabled && isset($_FILES['anh_360']) && $_FILES['anh_360']['error'] == 0) {
             $file_extension = pathinfo($_FILES["anh_360"]["name"], PATHINFO_EXTENSION);
             $anh_360_name = "360_" . time() . "." . $file_extension; 
             $target_360_file = $target_dir . $anh_360_name;
@@ -50,7 +60,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $success_message = "Thêm phòng thành công! ID: $new_room_id.";
             
             // 3. XỬ LÝ UPLOAD NHIỀU ẢNH PHỤ (GALLERY)
-            if (!empty($_FILES["gallery"]["name"][0])) {
+            if ($uploads_enabled && !empty($_FILES["gallery"]["name"][0])) {
                 $count = count($_FILES["gallery"]["name"]);
                 $insert_values = [];
                 $target_gal_dir = "../uploads/";
@@ -71,6 +81,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 }
             }
 
+            if (!$uploads_enabled) {
+                $success_message .= " Upload ảnh mới đang tắt ở chế độ free, nên hệ thống dùng ảnh mặc định.";
+            }
+
             echo "<script>alert('$success_message'); window.location.href='rooms.php';</script>";
         } else {
             $msg = "Lỗi SQL: " . $conn->error;
@@ -87,6 +101,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     </h2>
 
     <?php if($msg) echo "<p style='color:red;'>$msg</p>"; ?>
+    <?php if(!$uploads_enabled): ?>
+        <p style="background:#fff8e1; color:#8a6d00; padding:12px 15px; border-radius:6px; margin-bottom:20px;">
+            Chế độ free không có persistent disk. Khi tạo phòng mới, hệ thống sẽ dùng ảnh mặc định có sẵn trong repo thay cho upload mới.
+        </p>
+    <?php endif; ?>
 
     <form method="POST" enctype="multipart/form-data">
         
@@ -147,15 +166,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 30px;">
             <div>
                 <label style="display: block; margin-bottom: 5px; font-weight: 700; color: #003580;">1. Ảnh bìa (Chọn từ máy)</label>
-                <input type="file" name="main_image" required accept="image/*" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                <input type="file" name="main_image" <?php echo $uploads_enabled ? 'required' : 'disabled'; ?> accept="image/*" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
             </div>
             <div>
                 <label style="display: block; margin-bottom: 5px; font-weight: 700; color: #003580;">2. Ảnh tham khảo (Mở Camera)</label>
-                <input type="file" name="gallery[]" multiple accept="image/*" capture="environment" style="width: 100%; padding: 10px; border: 1px solid #0071c2; border-radius: 4px;">
+                <input type="file" name="gallery[]" multiple <?php echo $uploads_enabled ? '' : 'disabled'; ?> accept="image/*" capture="environment" style="width: 100%; padding: 10px; border: 1px solid #0071c2; border-radius: 4px;">
             </div>
             <div>
                 <label style="display: block; margin-bottom: 5px; font-weight: 700; color: #003580;">3. Ảnh 360° (Mở Camera)</label>
-                <input type="file" name="anh_360" accept="image/*" capture="environment" style="width: 100%; padding: 10px; border: 1px solid #febb02; border-radius: 4px;">
+                <input type="file" name="anh_360" <?php echo $uploads_enabled ? '' : 'disabled'; ?> accept="image/*" capture="environment" style="width: 100%; padding: 10px; border: 1px solid #febb02; border-radius: 4px;">
             </div>
         </div>
 

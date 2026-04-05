@@ -6,6 +6,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] != 'admin') {
     exit();
 }
 require_once '../includes/db.php';
+$uploads_enabled = app_uploads_enabled();
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -44,4 +45,11 @@ require_once '../includes/db.php';
             </nav>
         </div>
     </div>
+    <?php if (!$uploads_enabled): ?>
+    <div style="background:#fff3cd; color:#7a5a00; border-bottom:1px solid #f0d98c; padding:12px 0;">
+        <div class="container" style="font-weight:600;">
+            Chế độ free đang bật: hệ thống vẫn chạy với Postgres, nhưng upload ảnh mới và avatar đã được tắt để không phụ thuộc persistent disk.
+        </div>
+    </div>
+    <?php endif; ?>
     <div class="container" style="margin-top: 30px;">

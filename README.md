@@ -1,40 +1,56 @@
-# Hotel Booking on Render
+# Hotel Booking on Render Free
 
-Project nay da duoc chuan bi de deploy len Render bang Docker.
+Project nay da duoc chuyen sang huong deploy free-friendly tren Render:
 
-## Thanh phan da them
+- 1 web service `free`
+- 1 Render Postgres database `free`
+- Khong dung private MySQL service
+- Khong dung persistent disk
 
-- `render.yaml`: tao 1 web service PHP va 1 private MySQL service.
-- `Dockerfile`: chay app PHP/Apache tren Render.
-- `database/`: image MySQL import truc tiep tu file dump `hotel_booking.sql`.
-- `healthz.php`: endpoint health check cho Render.
-- `includes/db.php`: doc cau hinh DB tu bien moi truong.
+## Cac thay doi chinh
+
+- `render.yaml`: dung Render Postgres free va web service free.
+- `includes/db.php`: tu dong chon Postgres khi co `DATABASE_URL`.
+- `database/postgres_schema.sql`: schema Postgres cho runtime free.
+- `hotel_booking.sql`: du lieu goc, duoc app tu dong seed vao Postgres khi DB rong.
+- Upload file moi bi tat trong che do free de tranh mat du lieu do khong co persistent disk.
 
 ## Cach deploy
 
-1. Day toan bo project, bao gom file `hotel_booking.sql`, len GitHub.
+1. Push project len GitHub.
 2. Tren Render, chon `New` -> `Blueprint`.
-3. Ket noi repo chua project nay.
-4. Render se doc `render.yaml` va tao 2 service:
-   - `hotel-booking-mysql`
-   - `hotel-booking-web`
-5. Deploy Blueprint.
+3. Chon repo nay.
+4. Render se tao:
+   - Postgres database: `hotel-booking-db`
+   - Web service: `hotel-booking-web`
+5. Bấm deploy.
 
-## Du lieu duoc import
+## Co che seed du lieu
 
-- MySQL service se khoi tao tu file `hotel_booking.sql` trong lan chay dau tien.
-- Dump hien tai da co san du lieu phong, room images, users, bookings va admin.
-- Tai khoan admin trong dump hien tai:
-  - Email: `admin@gmail.com`
-  - Mat khau: `123456`
+- Lan chay dau tien, app se tao bang Postgres neu chua co.
+- Neu bang `users` dang rong, app se doc `hotel_booking.sql` va seed du lieu vao Postgres.
+- Tai khoan admin mac dinh van la:
+  - `admin@gmail.com`
+  - `123456`
 
-## Sau khi deploy
+## Gioi han cua ban free
 
-- Dang nhap admin bang tai khoan da co san trong DB dump.
-- Neu ban muon giu du lieu uploads sau moi lan redeploy, giu nguyen persistent disk nhu trong `render.yaml`.
-- Neu sau nay ban thay doi DB local va muon dong bo lai, can cap nhat file `hotel_booking.sql` roi tao moi MySQL service hoac import lai thu cong.
+- Render free web khong co persistent disk.
+- Vi vay:
+  - khong upload avatar moi
+  - khong upload anh phong moi len server
+  - khi them phong moi o admin, he thong dung anh mac dinh co san trong repo
+  - sua thong tin text van hoat dong
+
+## Neu muon day du hon sau nay
+
+Neu ban muon upload anh that su hoat dong ben vung, co 2 huong:
+
+1. Nang cap len paid plan de dung persistent disk.
+2. Chuyen upload sang Cloudinary/S3.
 
 ## Luu y
 
-- App hien dang dung mat khau dang nhap dang plain text theo logic san co trong code.
-- File SQL chi duoc Render import o lan khoi tao volume dau tien. Neu MySQL disk da co du lieu roi, Render se khong import lai dump nay tu dong.
+- App hien van dung plain-text password theo logic cu.
+- Render free web co the sleep khi khong co traffic.
+- Render free Postgres co gioi han dung luong va chinh sach het han theo tai khoan free hien hanh.
