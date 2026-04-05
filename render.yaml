@@ -1,0 +1,70 @@
+services:
+  - type: pserv
+    name: hotel-booking-mysql
+    runtime: docker
+    plan: starter
+    region: singapore
+    dockerfilePath: ./database/Dockerfile
+    dockerContext: .
+    disk:
+      name: mysql-data
+      mountPath: /var/lib/mysql
+      sizeGB: 1
+    envVars:
+      - key: MYSQL_DATABASE
+        value: hotel_booking
+      - key: MYSQL_USER
+        value: hotel_user
+      - key: MYSQL_PASSWORD
+        generateValue: true
+      - key: MYSQL_ROOT_PASSWORD
+        generateValue: true
+      - key: APP_ADMIN_NAME
+        sync: false
+      - key: APP_ADMIN_EMAIL
+        sync: false
+      - key: APP_ADMIN_PASSWORD
+        sync: false
+
+  - type: web
+    name: hotel-booking-web
+    runtime: docker
+    plan: starter
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /healthz.php
+    disk:
+      name: uploads
+      mountPath: /var/www/html/uploads
+      sizeGB: 1
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: TZ
+        value: Asia/Ho_Chi_Minh
+      - key: DB_HOST
+        fromService:
+          type: pserv
+          name: hotel-booking-mysql
+          property: host
+      - key: DB_PORT
+        fromService:
+          type: pserv
+          name: hotel-booking-mysql
+          property: port
+      - key: DB_DATABASE
+        fromService:
+          type: pserv
+          name: hotel-booking-mysql
+          envVarKey: MYSQL_DATABASE
+      - key: DB_USERNAME
+        fromService:
+          type: pserv
+          name: hotel-booking-mysql
+          envVarKey: MYSQL_USER
+      - key: DB_PASSWORD
+        fromService:
+          type: pserv
+          name: hotel-booking-mysql
+          envVarKey: MYSQL_PASSWORD

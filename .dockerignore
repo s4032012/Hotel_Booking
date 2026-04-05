@@ -1,0 +1,6 @@
+.git
+.gitignore
+README.md
+render.yaml
+database/.DS_Store
+**/.DS_Store
