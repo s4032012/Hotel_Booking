@@ -236,6 +236,25 @@ function sync_pg_identity_sequence(PDO $pdo, $tableName) {
     ");
 }
 
+function ensure_default_admin(PDO $pdo) {
+    $adminEmail = env_value('DEFAULT_ADMIN_EMAIL', 'admin@gmail.com');
+    $adminPassword = env_value('DEFAULT_ADMIN_PASSWORD', '123456');
+    $adminName = env_value('DEFAULT_ADMIN_NAME', 'Group 4');
+    $adminPhone = env_value('DEFAULT_ADMIN_PHONE', '0765933135');
+
+    $statement = $pdo->prepare('SELECT COUNT(*) FROM users WHERE email = ?');
+    $statement->execute([$adminEmail]);
+    $exists = (int) $statement->fetchColumn();
+
+    if ($exists === 0) {
+        $insert = $pdo->prepare("
+            INSERT INTO users (full_name, email, password, phone, role)
+            VALUES (?, ?, ?, ?, 'admin')
+        ");
+        $insert->execute([$adminName, $adminEmail, $adminPassword, $adminPhone]);
+    }
+}
+
 function seed_postgres_from_mysql_dump(PDO $pdo, $dumpPath) {
     if (!file_exists($dumpPath)) {
         return;
@@ -298,27 +317,36 @@ function bootstrap_postgres_database(PgCompatConnection $conn) {
     $shouldAutoSeed = env_flag('AUTO_SEED', true);
 
     try {
-        $pdo->beginTransaction();
-
         if (!pg_table_exists($pdo, 'users') && file_exists($schemaPath)) {
             $schemaSql = file_get_contents($schemaPath);
             if ($schemaSql !== false) {
                 $pdo->exec($schemaSql);
             }
         }
+    } catch (Throwable $e) {
+        $conn->error = $e->getMessage();
+        return;
+    }
 
-        if ($shouldAutoSeed && pg_table_exists($pdo, 'users')) {
+    if (!pg_table_exists($pdo, 'users')) {
+        $conn->error = 'Bang users chua duoc tao tren Postgres.';
+        return;
+    }
+
+    if ($shouldAutoSeed) {
+        try {
             $userCount = (int) $pdo->query('SELECT COUNT(*) FROM users')->fetchColumn();
             if ($userCount === 0) {
                 seed_postgres_from_mysql_dump($pdo, $dumpPath);
             }
+        } catch (Throwable $e) {
+            $conn->error = $e->getMessage();
         }
+    }
 
-        $pdo->commit();
+    try {
+        ensure_default_admin($pdo);
     } catch (Throwable $e) {
-        if ($pdo->inTransaction()) {
-            $pdo->rollBack();
-        }
         $conn->error = $e->getMessage();
     }
 }

@@ -11,14 +11,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $sql = "SELECT * FROM users WHERE email = '$email' AND password = '$password'";
     $result = $conn->query($sql);
 
-    if ($result->num_rows > 0) {
+    if ($result && $result->num_rows > 0) {
         $user = $result->fetch_assoc();
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['user_name'] = $user['full_name'];
         $_SESSION['user_role'] = $user['role']; 
         echo "<script>alert('Xin chào " . $user['full_name'] . "!'); window.location.href='index.php';</script>";
     } else {
-        $message = "<div style='background:#ffebee; color:#c62828; padding:10px; border-radius:5px; text-align:center; margin-bottom:15px;'>❌ Sai email hoặc mật khẩu!</div>";
+        if ($result === false) {
+            $message = "<div style='background:#ffebee; color:#c62828; padding:10px; border-radius:5px; text-align:center; margin-bottom:15px;'>❌ Hệ thống đang khởi tạo dữ liệu hoặc kết nối database chưa sẵn sàng. Vui lòng thử lại sau 10-20 giây.</div>";
+        } else {
+            $message = "<div style='background:#ffebee; color:#c62828; padding:10px; border-radius:5px; text-align:center; margin-bottom:15px;'>❌ Sai email hoặc mật khẩu!</div>";
+        }
     }
 }
 ?>
