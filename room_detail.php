@@ -130,7 +130,7 @@ if(isset($_GET['id'])) {
                 <div class="slider-track" id="sliderTrack">
                     <?php foreach($images as $index => $img): ?>
                         <div class="slider-item">
-                            <img src="uploads/<?php echo $img; ?>" 
+                            <img src="<?php echo media_url($img); ?>" 
                                  onclick="openLightbox(<?php echo $index; ?>)" 
                                  onerror="this.src='assets/images/default-room.jpg'"
                                  title="Bấm để phóng to">
@@ -317,7 +317,8 @@ if(isset($_GET['id'])) {
 
     function updateLightboxImage() {
         const fullImg = document.getElementById('imgFull');
-        fullImg.src = "uploads/" + galleryImages[lbIndex];
+        const img = galleryImages[lbIndex];
+        fullImg.src = /^https?:\/\//i.test(img) ? img : "uploads/" + img;
         document.getElementById('lbCounter').innerText = (lbIndex + 1) + " / " + galleryImages.length;
     }
 
@@ -347,7 +348,7 @@ if(isset($_GET['id'])) {
     document.addEventListener('DOMContentLoaded', function() {
         pannellum.viewer('panorama', {
             "type": "equirectangular",
-            "panorama": "uploads/<?php echo $room['image_360']; ?>", // Thay đổi nếu cần đường dẫn khác
+            "panorama": "<?php echo media_url($room['image_360']); ?>",
             "autoLoad": true,
             "compass": false,
             "mouseViewMode": "drag"

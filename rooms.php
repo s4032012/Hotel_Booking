@@ -179,7 +179,7 @@ $result = $conn->query($sql);
                 <?php while($row = $result->fetch_assoc()): ?>
                     <div class="pro-room-card" style="display: flex; background: #fff; border: 1px solid #e7e7e7; border-radius: 8px; overflow: hidden; transition: 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
                         <div class="pro-img-container" style="width: 35%; position: relative;">
-                            <img src="uploads/<?php echo $row['image']; ?>" style="width: 100%; height: 100%; object-fit: cover; min-height: 220px;" onerror="this.src='assets/images/default-room.jpg'">
+                            <img src="<?php echo media_url($row['image']); ?>" style="width: 100%; height: 100%; object-fit: cover; min-height: 220px;" onerror="this.src='assets/images/default-room.jpg'">
                             <span style="position: absolute; top: 10px; left: 10px; background: #0071c2; color: white; padding: 4px 10px; font-size: 0.8rem; border-radius: 4px; font-weight: bold;">
                                 Ưu đãi
                             </span>

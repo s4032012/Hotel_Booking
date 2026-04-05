@@ -126,7 +126,7 @@ require_once 'includes/header.php';
         ?>
             <div class="hotel-card" data-aos="fade-up">
                 <div class="hotel-image-container">
-                    <img src="uploads/<?php echo $row['image']; ?>" onerror="this.src='assets/images/default-room.jpg'">
+                    <img src="<?php echo media_url($row['image']); ?>" onerror="this.src='assets/images/default-room.jpg'">
                     <span class="hotel-badge"><?php echo $row['room_type']; ?></span>
                 </div>
                 <div class="hotel-content">

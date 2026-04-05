@@ -52,4 +52,11 @@ $uploads_enabled = app_uploads_enabled();
         </div>
     </div>
     <?php endif; ?>
+    <?php if (cloudinary_is_configured()): ?>
+    <div style="background:#e8f5e9; color:#1b5e20; border-bottom:1px solid #c8e6c9; padding:12px 0;">
+        <div class="container" style="font-weight:600;">
+            Cloudinary đã được cấu hình: ảnh mới và avatar sẽ upload lên cloud thay vì lưu local.
+        </div>
+    </div>
+    <?php endif; ?>
     <div class="container" style="margin-top: 30px;">

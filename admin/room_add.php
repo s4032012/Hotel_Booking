@@ -27,14 +27,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // --------------------------------------------------------
     
     // 1. Xử lý upload ảnh đại diện (Main Image)
-    $target_dir = "../uploads/";
     $main_filename = $default_image;
     $main_image_uploaded = false;
 
     if ($uploads_enabled && isset($_FILES["main_image"]) && $_FILES["main_image"]["error"] == 0) {
-        $main_filename = time() . "_" . basename($_FILES["main_image"]["name"]);
-        $target_main_file = $target_dir . $main_filename;
-        $main_image_uploaded = move_uploaded_file($_FILES["main_image"]["tmp_name"], $target_main_file);
+        if (cloudinary_is_configured()) {
+            $uploaded = cloudinary_upload($_FILES["main_image"]["tmp_name"], 'hotel_booking/rooms');
+            if ($uploaded) {
+                $main_filename = $uploaded;
+                $main_image_uploaded = true;
+            }
+        } else {
+            $target_dir = "../uploads/";
+            $main_filename = time() . "_" . basename($_FILES["main_image"]["name"]);
+            $target_main_file = $target_dir . $main_filename;
+            $main_image_uploaded = move_uploaded_file($_FILES["main_image"]["tmp_name"], $target_main_file);
+        }
     } elseif (!$uploads_enabled) {
         $main_image_uploaded = true;
     }
@@ -44,10 +52,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // --- BẮT ĐẦU: XỬ LÝ ẢNH 360 ĐỘ TỪ CAMERA ---
         $anh_360_name = ""; 
         if ($uploads_enabled && isset($_FILES['anh_360']) && $_FILES['anh_360']['error'] == 0) {
-            $file_extension = pathinfo($_FILES["anh_360"]["name"], PATHINFO_EXTENSION);
-            $anh_360_name = "360_" . time() . "." . $file_extension; 
-            $target_360_file = $target_dir . $anh_360_name;
-            move_uploaded_file($_FILES["anh_360"]["tmp_name"], $target_360_file);
+            if (cloudinary_is_configured()) {
+                $uploaded360 = cloudinary_upload($_FILES["anh_360"]["tmp_name"], 'hotel_booking/rooms/360');
+                if ($uploaded360) {
+                    $anh_360_name = $uploaded360;
+                }
+            } else {
+                $target_dir = "../uploads/";
+                $file_extension = pathinfo($_FILES["anh_360"]["name"], PATHINFO_EXTENSION);
+                $anh_360_name = "360_" . time() . "." . $file_extension; 
+                $target_360_file = $target_dir . $anh_360_name;
+                move_uploaded_file($_FILES["anh_360"]["tmp_name"], $target_360_file);
+            }
         }
         // --- KẾT THÚC: XỬ LÝ ẢNH 360 ĐỘ ---
 
@@ -63,13 +79,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             if ($uploads_enabled && !empty($_FILES["gallery"]["name"][0])) {
                 $count = count($_FILES["gallery"]["name"]);
                 $insert_values = [];
-                $target_gal_dir = "../uploads/";
-                
                 for($i=0; $i<$count; $i++) {
-                    $gal_filename = time() . "_" . $i . "_" . basename($_FILES["gallery"]["name"][$i]);
-                    $target_gal_file = $target_gal_dir . $gal_filename;
-                    
-                    if (move_uploaded_file($_FILES["gallery"]["tmp_name"][$i], $target_gal_file)) {
+                    $gal_filename = null;
+                    if (cloudinary_is_configured()) {
+                        $gal_filename = cloudinary_upload($_FILES["gallery"]["tmp_name"][$i], 'hotel_booking/rooms/gallery');
+                    } else {
+                        $target_gal_dir = "../uploads/";
+                        $gal_filename = time() . "_" . $i . "_" . basename($_FILES["gallery"]["name"][$i]);
+                        $target_gal_file = $target_gal_dir . $gal_filename;
+                        if (!move_uploaded_file($_FILES["gallery"]["tmp_name"][$i], $target_gal_file)) {
+                            $gal_filename = null;
+                        }
+                    }
+
+                    if ($gal_filename) {
                         $insert_values[] = "('$new_room_id', '$gal_filename')";
                     }
                 }
@@ -104,6 +127,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <?php if(!$uploads_enabled): ?>
         <p style="background:#fff8e1; color:#8a6d00; padding:12px 15px; border-radius:6px; margin-bottom:20px;">
             Chế độ free không có persistent disk. Khi tạo phòng mới, hệ thống sẽ dùng ảnh mặc định có sẵn trong repo thay cho upload mới.
+        </p>
+    <?php endif; ?>
+    <?php if(cloudinary_is_configured()): ?>
+        <p style="background:#e8f5e9; color:#1b5e20; padding:12px 15px; border-radius:6px; margin-bottom:20px;">
+            Cloudinary đang bật: ảnh bìa, gallery, ảnh 360 và avatar sẽ được upload lên cloud.
         </p>
     <?php endif; ?>
 

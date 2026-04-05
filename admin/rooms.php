@@ -31,7 +31,7 @@
                 <tr style="border-bottom: 1px solid #eee;">
                     <td style="padding: 12px;">#<?php echo $row['id']; ?></td>
                     <td style="padding: 12px;">
-                        <img src="../uploads/<?php echo $row['image']; ?>" style="width: 60px; height: 40px; object-fit: cover; border-radius: 4px;">
+                        <img src="<?php echo media_url($row['image'], '../uploads/'); ?>" style="width: 60px; height: 40px; object-fit: cover; border-radius: 4px;">
                     </td>
                     <td style="padding: 12px; font-weight: 600;"><?php echo $row['room_name']; ?></td>
                     <td style="padding: 12px;"><?php echo $row['room_type']; ?></td>

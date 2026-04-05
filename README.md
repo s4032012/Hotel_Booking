@@ -23,7 +23,11 @@ Project nay da duoc chuyen sang huong:
 5. Tren Render, chon `New` -> `Blueprint`
 6. Chon repo nay.
 7. O bien moi truong `MONGODB_URI`, dan connection string Atlas.
-8. Deploy.
+8. Neu muon upload anh tren ban free, them:
+   - `CLOUDINARY_CLOUD_NAME`
+   - `CLOUDINARY_API_KEY`
+   - `CLOUDINARY_API_SECRET`
+9. Deploy.
 
 ## Co che seed du lieu
 
@@ -45,6 +49,8 @@ Project nay da duoc chuyen sang huong:
 - Upload anh phong moi: tat
 - Them sua du lieu text: duoc
 - Booking, login, admin dashboard: duoc
+
+Neu da cau hinh Cloudinary, upload avatar va anh phong se hoat dong binh thuong tren Render free.
 
 ## Luu y
 

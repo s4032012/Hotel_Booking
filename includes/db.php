@@ -19,11 +19,102 @@ function env_flag($key, $default = false) {
 }
 
 function app_uploads_enabled() {
-    return !env_flag('DISABLE_FILE_UPLOADS', false);
+    return cloudinary_is_configured() || !env_flag('DISABLE_FILE_UPLOADS', false);
 }
 
 function app_free_mode() {
     return env_flag('RENDER', false) && env_flag('DISABLE_FILE_UPLOADS', false);
+}
+
+function cloudinary_is_configured() {
+    return (bool) (env_value('CLOUDINARY_CLOUD_NAME') && env_value('CLOUDINARY_API_KEY') && env_value('CLOUDINARY_API_SECRET'));
+}
+
+function is_remote_url($path) {
+    return is_string($path) && preg_match('#^https?://#i', $path);
+}
+
+function media_url($path, $prefix = 'uploads/', $fallback = 'assets/images/default-room.jpg') {
+    if (!empty($path)) {
+        if (is_remote_url($path)) {
+            return $path;
+        }
+        return $prefix . ltrim($path, '/');
+    }
+
+    return $fallback;
+}
+
+function avatar_url($avatar, $fullName) {
+    if (!empty($avatar)) {
+        if (is_remote_url($avatar)) {
+            return $avatar;
+        }
+
+        $localPath = "uploads/avatars/" . $avatar;
+        if (file_exists($localPath)) {
+            return $localPath;
+        }
+    }
+
+    return "https://ui-avatars.com/api/?name=" . urlencode($fullName) . "&background=0078d4&color=fff&size=128";
+}
+
+function cloudinary_upload($tmpPath, $folder = 'hotel_booking', $publicId = null) {
+    if (!cloudinary_is_configured() || !is_file($tmpPath)) {
+        return null;
+    }
+
+    $cloudName = env_value('CLOUDINARY_CLOUD_NAME');
+    $apiKey = env_value('CLOUDINARY_API_KEY');
+    $apiSecret = env_value('CLOUDINARY_API_SECRET');
+    $timestamp = time();
+    $params = [
+        'folder' => $folder,
+        'timestamp' => $timestamp,
+    ];
+
+    if ($publicId) {
+        $params['public_id'] = $publicId;
+    }
+
+    ksort($params);
+    $signatureBase = [];
+    foreach ($params as $key => $value) {
+        $signatureBase[] = $key . '=' . $value;
+    }
+    $signature = sha1(implode('&', $signatureBase) . $apiSecret);
+
+    $postFields = [
+        'file' => new CURLFile($tmpPath),
+        'api_key' => $apiKey,
+        'timestamp' => $timestamp,
+        'signature' => $signature,
+        'folder' => $folder,
+    ];
+
+    if ($publicId) {
+        $postFields['public_id'] = $publicId;
+    }
+
+    $ch = curl_init("https://api.cloudinary.com/v1_1/{$cloudName}/image/upload");
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => $postFields,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 60,
+    ]);
+    $response = curl_exec($ch);
+    $error = curl_error($ch);
+    $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($response === false || $error || $status >= 400) {
+        return null;
+    }
+
+    $decoded = json_decode($response, true);
+    return $decoded['secure_url'] ?? null;
 }
 
 class DbResultCompat {

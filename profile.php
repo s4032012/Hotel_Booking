@@ -20,12 +20,19 @@ if (isset($_POST['update_profile'])) {
 
     // Xử lý upload ảnh (đã được crop)
     if ($uploads_enabled && isset($_FILES['avatar']) && $_FILES['avatar']['error'] == 0) {
-        $target_dir = "uploads/avatars/";
-        if (!file_exists($target_dir)) mkdir($target_dir, 0777, true);
-        $new_filename = "user_" . $user_id . "_" . time() . ".jpg";
-        
-        if (move_uploaded_file($_FILES["avatar"]["tmp_name"], $target_dir . $new_filename)) {
-            $conn->query("UPDATE users SET avatar = '$new_filename' WHERE id = $user_id");
+        if (cloudinary_is_configured()) {
+            $avatarUrl = cloudinary_upload($_FILES["avatar"]["tmp_name"], 'hotel_booking/avatars', 'user_' . $user_id . '_' . time());
+            if ($avatarUrl) {
+                $conn->query("UPDATE users SET avatar = '$avatarUrl' WHERE id = $user_id");
+            }
+        } else {
+            $target_dir = "uploads/avatars/";
+            if (!file_exists($target_dir)) mkdir($target_dir, 0777, true);
+            $new_filename = "user_" . $user_id . "_" . time() . ".jpg";
+            
+            if (move_uploaded_file($_FILES["avatar"]["tmp_name"], $target_dir . $new_filename)) {
+                $conn->query("UPDATE users SET avatar = '$new_filename' WHERE id = $user_id");
+            }
         }
     }
     if (!$uploads_enabled) {
@@ -54,7 +61,7 @@ if ($result_user && $result_user->num_rows > 0) {
     exit();
 }
 
-$avatar_url = (!empty($user['avatar']) && file_exists("uploads/avatars/" . $user['avatar'])) ? "uploads/avatars/" . $user['avatar'] : "https://ui-avatars.com/api/?name=" . urlencode($user['full_name']) . "&background=0078d4&color=fff&size=128";
+$avatar_url = avatar_url($user['avatar'] ?? '', $user['full_name']);
 
 // --- XỬ LÝ LỊCH SỬ ĐẶT PHÒNG ---
 $sql_bookings = "SELECT b.*, r.room_name, r.image FROM bookings b JOIN rooms r ON b.room_id = r.id WHERE b.user_id = $user_id ORDER BY b.created_at DESC";
@@ -107,7 +114,7 @@ $current_tab = isset($_GET['tab']) ? $_GET['tab'] : 'info';
             <?php echo $message; ?>
             <?php if(!$uploads_enabled): ?>
                 <div class='alert-success' style="background:#fff8e1; color:#8a6d00; border-left-color:#d4a017;">
-                    Ở chế độ free trên Render, avatar mới không được upload vì web service không có persistent disk.
+                    Ở chế độ free trên Render, avatar local không bền vững. Nếu đã cấu hình Cloudinary thì avatar mới vẫn upload được bình thường.
                 </div>
             <?php endif; ?>
             
@@ -160,7 +167,7 @@ $current_tab = isset($_GET['tab']) ? $_GET['tab'] : 'info';
                     ?>
 
                     <div style="display: flex; gap: 20px; border-bottom: 1px solid #eee; padding: 20px 0;">
-                        <img src="uploads/<?php echo $row['image']; ?>" style="width: 120px; height: 90px; object-fit: cover; border-radius: 8px;" onerror="this.src='assets/images/default-room.jpg'">
+                        <img src="<?php echo media_url($row['image']); ?>" style="width: 120px; height: 90px; object-fit: cover; border-radius: 8px;" onerror="this.src='assets/images/default-room.jpg'">
                         <div style="flex: 1;">
                             <h4 style="color: #0071c2; margin: 0 0 8px; font-size: 1.1rem;"><?php echo $row['room_name']; ?></h4>
                             <p style="margin: 0; font-size: 0.95rem; color: #555;">

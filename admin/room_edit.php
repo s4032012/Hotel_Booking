@@ -37,12 +37,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
     // Xử lý upload ảnh đại diện mới (nếu có)
     if ($uploads_enabled && !empty($_FILES["main_image"]["name"])) {
-        $target_dir = "../uploads/";
-        $filename = time() . "_" . basename($_FILES["main_image"]["name"]); 
-        $target_file = $target_dir . $filename;
-        
-        if (move_uploaded_file($_FILES["main_image"]["tmp_name"], $target_file)) {
-            $image_query = ", image = '$filename'";
+        if (cloudinary_is_configured()) {
+            $filename = cloudinary_upload($_FILES["main_image"]["tmp_name"], 'hotel_booking/rooms');
+            if ($filename) {
+                $image_query = ", image = '$filename'";
+            }
+        } else {
+            $target_dir = "../uploads/";
+            $filename = time() . "_" . basename($_FILES["main_image"]["name"]); 
+            $target_file = $target_dir . $filename;
+            
+            if (move_uploaded_file($_FILES["main_image"]["tmp_name"], $target_file)) {
+                $image_query = ", image = '$filename'";
+            }
         }
     }
 
@@ -50,13 +57,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if ($uploads_enabled && !empty($_FILES["gallery"]["name"][0])) {
         $count = count($_FILES["gallery"]["name"]);
         $insert_values = [];
-        $target_dir = "../uploads/";
-        
         for($i=0; $i<$count; $i++) {
-            $gal_filename = time() . "_" . $i . "_" . basename($_FILES["gallery"]["name"][$i]);
-            $target_gal_file = $target_dir . $gal_filename;
-            
-            if (move_uploaded_file($_FILES["gallery"]["tmp_name"][$i], $target_gal_file)) {
+            $gal_filename = null;
+            if (cloudinary_is_configured()) {
+                $gal_filename = cloudinary_upload($_FILES["gallery"]["tmp_name"][$i], 'hotel_booking/rooms/gallery');
+            } else {
+                $target_dir = "../uploads/";
+                $gal_filename = time() . "_" . $i . "_" . basename($_FILES["gallery"]["name"][$i]);
+                $target_gal_file = $target_dir . $gal_filename;
+                
+                if (!move_uploaded_file($_FILES["gallery"]["tmp_name"][$i], $target_gal_file)) {
+                    $gal_filename = null;
+                }
+            }
+
+            if ($gal_filename) {
                 $insert_values[] = "('$id', '$gal_filename')";
             }
         }
@@ -106,6 +121,11 @@ $gallery_result = $conn->query($gallery_sql);
     <?php if(!$uploads_enabled): ?>
         <p style="background:#fff8e1; color:#8a6d00; padding:12px 15px; border-radius:6px; margin-bottom:20px;">
             Chế độ free không lưu được file upload bền vững. Bạn vẫn sửa được thông tin text, nhưng thay ảnh mới đang bị khóa.
+        </p>
+    <?php endif; ?>
+    <?php if(cloudinary_is_configured()): ?>
+        <p style="background:#e8f5e9; color:#1b5e20; padding:12px 15px; border-radius:6px; margin-bottom:20px;">
+            Cloudinary đang bật: thay ảnh mới sẽ lưu lên cloud.
         </p>
     <?php endif; ?>
 
@@ -163,7 +183,7 @@ $gallery_result = $conn->query($gallery_sql);
 
         <div style="margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 20px;">
             <label style="display: block; margin-bottom: 5px; font-weight: 700; color: #333;">Ảnh đại diện hiện tại</label>
-            <img src="../uploads/<?php echo $room['image']; ?>" style="height: 80px; margin: 5px 0 10px; border-radius: 4px; border: 1px solid #eee;">
+            <img src="<?php echo media_url($room['image'], '../uploads/'); ?>" style="height: 80px; margin: 5px 0 10px; border-radius: 4px; border: 1px solid #eee;">
             <input type="file" name="main_image" <?php echo $uploads_enabled ? '' : 'disabled'; ?> accept="image/*" style="width: 100%;">
         </div>
         
@@ -175,7 +195,7 @@ $gallery_result = $conn->query($gallery_sql);
                 <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
                     <?php while($img = $gallery_result->fetch_assoc()): ?>
                         <div style="position: relative; border: 1px solid #ddd; padding: 5px; border-radius: 4px; background: #fff;">
-                            <img src="../uploads/<?php echo $img['image_path']; ?>" style="height: 60px; width: 80px; object-fit: cover;">
+                            <img src="<?php echo media_url($img['image_path'], '../uploads/'); ?>" style="height: 60px; width: 80px; object-fit: cover;">
                             <a href="room_edit.php?id=<?php echo $id; ?>&delete_img_id=<?php echo $img['id']; ?>" 
                                onclick="return confirm('Xóa ảnh này khỏi thư viện?');" 
                                style="position: absolute; top: -10px; right: -10px; background: #c0392b; color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 0.8rem; line-height: 18px; text-align: center; text-decoration: none;">
