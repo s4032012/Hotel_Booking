@@ -272,7 +272,9 @@ class MongoCompatConnection {
     }
 
     public function bootstrap() {
+        $this->dedupeSeedData();
         if ($this->countDocuments('users', []) > 0) {
+            $this->ensureIndexes();
             return;
         }
 
@@ -308,6 +310,8 @@ class MongoCompatConnection {
 
         $this->ensureDefaultAdmin();
         $this->syncAllCounters();
+        $this->dedupeSeedData();
+        $this->ensureIndexes();
     }
 
     private function ensureDefaultAdmin() {
@@ -469,7 +473,7 @@ class MongoCompatConnection {
             return [['c' => $this->countDocuments('rooms', [])]];
         }
 
-        if (preg_match("/^SELECT COUNT\(\*\) as c FROM bookings WHERE status='([^']+)' AND created_at BETWEEN '([^']+)' AND '([^']+)'$/i", $sql, $m)) {
+        if (preg_match("/^SELECT COUNT\(\*\)\s+as\s+c\s+FROM bookings WHERE status\s*=\s*'([^']+)'\s+AND created_at BETWEEN '([^']+)' AND '([^']+)'$/i", $sql, $m)) {
             $count = 0;
             foreach ($this->findMany('bookings', ['status' => $m[1]]) as $booking) {
                 if ($booking['created_at'] >= $m[2] && $booking['created_at'] <= $m[3]) {
@@ -479,7 +483,7 @@ class MongoCompatConnection {
             return [['c' => $count]];
         }
 
-        if (preg_match("/^SELECT COUNT\(\*\) as c FROM bookings WHERE \(status='confirmed' OR status='completed'\) AND created_at BETWEEN '([^']+)' AND '([^']+)'$/i", $sql, $m)) {
+        if (preg_match("/^SELECT COUNT\(\*\)\s+as\s+c\s+FROM bookings WHERE \(status='confirmed' OR status='completed'\)\s+AND created_at BETWEEN '([^']+)' AND '([^']+)'$/i", $sql, $m)) {
             $count = 0;
             foreach ($this->findMany('bookings', []) as $booking) {
                 if (in_array($booking['status'], ['confirmed', 'completed'], true) && $booking['created_at'] >= $m[1] && $booking['created_at'] <= $m[2]) {
@@ -489,7 +493,7 @@ class MongoCompatConnection {
             return [['c' => $count]];
         }
 
-        if (preg_match("/^SELECT SUM\(total_price\) as s FROM bookings WHERE \(status='confirmed' OR status='completed'\) AND created_at BETWEEN '([^']+)' AND '([^']+)'$/i", $sql, $m)) {
+        if (preg_match("/^SELECT SUM\(total_price\)\s+as\s+s\s+FROM bookings WHERE \(status='confirmed' OR status='completed'\)\s+AND created_at BETWEEN '([^']+)' AND '([^']+)'$/i", $sql, $m)) {
             $sum = 0;
             foreach ($this->findMany('bookings', []) as $booking) {
                 if (in_array($booking['status'], ['confirmed', 'completed'], true) && $booking['created_at'] >= $m[1] && $booking['created_at'] <= $m[2]) {
@@ -713,6 +717,43 @@ class MongoCompatConnection {
         return $rows[0] ?? null;
     }
 
+    private function ensureIndexes() {
+        foreach (['users', 'rooms', 'room_images', 'bookings', 'favorites', 'payments'] as $collection) {
+            $this->command([
+                'createIndexes' => $collection,
+                'indexes' => [
+                    [
+                        'key' => ['id' => 1],
+                        'name' => 'uniq_id',
+                        'unique' => true,
+                    ],
+                ],
+            ]);
+        }
+
+        $this->command([
+            'createIndexes' => 'users',
+            'indexes' => [
+                [
+                    'key' => ['email' => 1],
+                    'name' => 'uniq_email',
+                    'unique' => true,
+                ],
+            ],
+        ]);
+
+        $this->command([
+            'createIndexes' => 'favorites',
+            'indexes' => [
+                [
+                    'key' => ['user_id' => 1, 'room_id' => 1],
+                    'name' => 'uniq_user_room',
+                    'unique' => true,
+                ],
+            ],
+        ]);
+    }
+
     private function namespace($collection) {
         return $this->dbName . '.' . $collection;
     }
@@ -846,6 +887,47 @@ class MongoCompatConnection {
         $this->deleteOne('bookings', ['id' => $bookingId]);
         $this->deleteMany('payments', ['booking_id' => $bookingId]);
         return true;
+    }
+
+    private function dedupeSeedData() {
+        foreach (['users', 'rooms', 'room_images', 'bookings', 'favorites', 'payments'] as $collection) {
+            $cursor = $this->manager->executeQuery(
+                $this->namespace($collection),
+                new MongoDB\Driver\Query([], ['sort' => ['id' => 1]])
+            );
+            $seen = [];
+            foreach ($cursor as $doc) {
+                $row = bson_to_array($doc);
+                if (!isset($row['id'])) {
+                    continue;
+                }
+                $id = (int) $row['id'];
+                if (isset($seen[$id])) {
+                    $bulk = new MongoDB\Driver\BulkWrite();
+                    $bulk->delete(['_id' => $doc->_id], ['limit' => 1]);
+                    $this->manager->executeBulkWrite($this->namespace($collection), $bulk);
+                    continue;
+                }
+                $seen[$id] = true;
+            }
+        }
+
+        $cursor = $this->manager->executeQuery(
+            $this->namespace('favorites'),
+            new MongoDB\Driver\Query([], ['sort' => ['id' => 1]])
+        );
+        $seenFavorites = [];
+        foreach ($cursor as $doc) {
+            $favorite = bson_to_array($doc);
+            $key = ($favorite['user_id'] ?? '') . ':' . ($favorite['room_id'] ?? '');
+            if (isset($seenFavorites[$key])) {
+                $bulk = new MongoDB\Driver\BulkWrite();
+                $bulk->delete(['_id' => $doc->_id], ['limit' => 1]);
+                $this->manager->executeBulkWrite($this->namespace('favorites'), $bulk);
+                continue;
+            }
+            $seenFavorites[$key] = true;
+        }
     }
 }
 

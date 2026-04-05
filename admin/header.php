@@ -48,7 +48,7 @@ $uploads_enabled = app_uploads_enabled();
     <?php if (!$uploads_enabled): ?>
     <div style="background:#fff3cd; color:#7a5a00; border-bottom:1px solid #f0d98c; padding:12px 0;">
         <div class="container" style="font-weight:600;">
-            Chế độ free đang bật: hệ thống vẫn chạy với Postgres, nhưng upload ảnh mới và avatar đã được tắt để không phụ thuộc persistent disk.
+            Chế độ free đang bật: database đang chạy trên cloud, nhưng upload ảnh mới và avatar đã được tắt vì Render free không có persistent disk.
         </div>
     </div>
     <?php endif; ?>
