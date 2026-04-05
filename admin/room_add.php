@@ -124,17 +124,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     </h2>
 
     <?php if($msg) echo "<p style='color:red;'>$msg</p>"; ?>
-    <?php if(!$uploads_enabled): ?>
-        <p style="background:#fff8e1; color:#8a6d00; padding:12px 15px; border-radius:6px; margin-bottom:20px;">
-            Chế độ free không có persistent disk. Khi tạo phòng mới, hệ thống sẽ dùng ảnh mặc định có sẵn trong repo thay cho upload mới.
-        </p>
-    <?php endif; ?>
-    <?php if(cloudinary_is_configured()): ?>
-        <p style="background:#e8f5e9; color:#1b5e20; padding:12px 15px; border-radius:6px; margin-bottom:20px;">
-            Cloudinary đang bật: ảnh bìa, gallery, ảnh 360 và avatar sẽ được upload lên cloud.
-        </p>
-    <?php endif; ?>
-
     <form method="POST" enctype="multipart/form-data">
         
         <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 15px;">

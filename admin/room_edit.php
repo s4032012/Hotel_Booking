@@ -118,17 +118,6 @@ $gallery_result = $conn->query($gallery_sql);
     </h2>
     <?php if(isset($_GET['msg']) == 'deleted') echo "<p style='color:green; background:#e8f5e9; padding:10px;'>Đã xóa ảnh gallery!</p>"; ?>
     <?php if($msg) echo "<p style='color:red;'>$msg</p>"; ?>
-    <?php if(!$uploads_enabled): ?>
-        <p style="background:#fff8e1; color:#8a6d00; padding:12px 15px; border-radius:6px; margin-bottom:20px;">
-            Chế độ free không lưu được file upload bền vững. Bạn vẫn sửa được thông tin text, nhưng thay ảnh mới đang bị khóa.
-        </p>
-    <?php endif; ?>
-    <?php if(cloudinary_is_configured()): ?>
-        <p style="background:#e8f5e9; color:#1b5e20; padding:12px 15px; border-radius:6px; margin-bottom:20px;">
-            Cloudinary đang bật: thay ảnh mới sẽ lưu lên cloud.
-        </p>
-    <?php endif; ?>
-
     <form method="POST" enctype="multipart/form-data">
         
         <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 15px;">

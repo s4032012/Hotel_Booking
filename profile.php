@@ -112,12 +112,6 @@ $current_tab = isset($_GET['tab']) ? $_GET['tab'] : 'info';
         <div id="tab-info" class="tab-content <?php echo ($current_tab == 'info') ? 'active' : ''; ?>">
             <h2 style="margin-bottom: 20px; border-bottom: 2px solid #febb02; padding-bottom: 15px; color: #003580; display: inline-block;">Hồ sơ của tôi</h2>
             <?php echo $message; ?>
-            <?php if(!$uploads_enabled): ?>
-                <div class='alert-success' style="background:#fff8e1; color:#8a6d00; border-left-color:#d4a017;">
-                    Ở chế độ free trên Render, avatar local không bền vững. Nếu đã cấu hình Cloudinary thì avatar mới vẫn upload được bình thường.
-                </div>
-            <?php endif; ?>
-            
             <form method="POST" enctype="multipart/form-data">
                 <div style="margin-bottom: 25px; text-align: center;">
                     <label for="avatarInput" style="cursor: pointer; color: #0071c2; font-weight: bold; padding: 10px 20px; border: 2px dashed #0071c2; border-radius: 6px; display: inline-block; transition: 0.3s;">

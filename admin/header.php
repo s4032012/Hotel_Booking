@@ -6,7 +6,6 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] != 'admin') {
     exit();
 }
 require_once '../includes/db.php';
-$uploads_enabled = app_uploads_enabled();
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -45,18 +44,4 @@ $uploads_enabled = app_uploads_enabled();
             </nav>
         </div>
     </div>
-    <?php if (!$uploads_enabled): ?>
-    <div style="background:#fff3cd; color:#7a5a00; border-bottom:1px solid #f0d98c; padding:12px 0;">
-        <div class="container" style="font-weight:600;">
-            Chế độ free đang bật: database đang chạy trên cloud, nhưng upload ảnh mới và avatar đã được tắt vì Render free không có persistent disk.
-        </div>
-    </div>
-    <?php endif; ?>
-    <?php if (cloudinary_is_configured()): ?>
-    <div style="background:#e8f5e9; color:#1b5e20; border-bottom:1px solid #c8e6c9; padding:12px 0;">
-        <div class="container" style="font-weight:600;">
-            Cloudinary đã được cấu hình: ảnh mới và avatar sẽ upload lên cloud thay vì lưu local.
-        </div>
-    </div>
-    <?php endif; ?>
     <div class="container" style="margin-top: 30px;">
