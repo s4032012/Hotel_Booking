@@ -1,11 +1,3 @@
-databases:
-  - name: hotel-booking-db
-    plan: free
-    region: singapore
-    databaseName: hotel_booking
-    user: hotel_booking_user
-    postgresMajorVersion: "17"
-
 services:
   - type: web
     name: hotel-booking-web
@@ -23,14 +15,14 @@ services:
       - key: TZ
         value: Asia/Ho_Chi_Minh
       - key: DB_CONNECTION
-        value: pgsql
+        value: mongodb
       - key: AUTO_SEED
         value: "true"
       - key: DISABLE_FILE_UPLOADS
         value: "true"
       - key: DEFAULT_ROOM_IMAGE
         value: hotel-bg.jpg
-      - key: DATABASE_URL
-        fromDatabase:
-          name: hotel-booking-db
-          property: connectionString
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DATABASE
+        value: hotel_booking
